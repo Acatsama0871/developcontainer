@@ -1,0 +1,115 @@
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# defaults
+RUN apt-get update \ 
+  && apt-get install -y build-essential --no-install-recommends make \
+  git \
+  libssl-dev \
+  zlib1g-dev \
+  libbz2-dev \
+  libreadline-dev \
+  libsqlite3-dev \
+  wget \
+  curl \
+  llvm \
+  libncurses5-dev \
+  xz-utils \
+  tk-dev \
+  libxml2-dev \
+  libxmlsec1-dev \
+  libffi-dev \
+  liblzma-dev \
+  htop \
+  sudo \
+  unzip \
+  vim \
+  tmux \
+  curl \
+  screen \
+  cloc \
+  cmake \
+  libopenmpi-dev \
+  locales
+
+# install locale
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+  locale-gen
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8
+
+# python 3.10 install
+RUN sudo apt install software-properties-common -y \
+  && sudo add-apt-repository ppa:deadsnakes/ppa -y \
+  && sudo apt install python3.10 -y \
+  && sudo apt install python-is-python3 -y \
+  && sudo apt install python3-pip -y
+RUN sudo apt install python3.10-venv -y
+
+# other tools
+# gdu
+RUN curl -L https://github.com/dundee/gdu/releases/latest/download/gdu_linux_amd64.tgz | tar xz && \
+  chmod +x gdu_linux_amd64 && \
+  mv gdu_linux_amd64 /usr/bin/gdu
+
+# lazygit
+RUN LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*') && \
+  curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" && \
+  tar xf lazygit.tar.gz lazygit && \
+  install lazygit /usr/local/bin
+
+# bottom
+RUN curl -LO https://github.com/ClementTsang/bottom/releases/download/0.9.6/bottom_0.9.6_amd64.deb && \
+  dpkg -i bottom_0.9.6_amd64.deb
+
+# install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh 
+
+# install nvim
+# install all needed to run nvim
+RUN apt-get install -y fzf \
+  ripgrep \
+  tree \
+  xclip \
+  tzdata \
+  ninja-build \
+  gettext \ 
+  libtool \ 
+  libtool-bin \ 
+  autoconf \
+  automake \ 
+  cmake \ 
+  g++ \
+  pkg-config \
+  zip \ 
+  fd-find \
+  unzip
+
+# install go
+WORKDIR /root/downloads
+RUN wget https://go.dev/dl/go1.22.2.linux-amd64.tar.gz
+RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go1.22.2.linux-amd64.tar.gz
+RUN export PATH=$PATH:/usr/local/go/bin
+
+
+# update the node otherwiser autocompletion may not work
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash - && sudo apt-get install -y nodejs
+
+# install NVIM
+ENV CMAKE_BUILD_TYPE=RelWithDebInfo
+
+RUN mkdir -p /root/TMP
+RUN cd /root/TMP && git clone https://github.com/neovim/neovim
+RUN cd /root/TMP/neovim && git checkout stable && make -j4 && make install
+RUN rm -rf /root/TMP
+
+# add config
+WORKDIR /root/.config/nvim
+RUN git clone --depth 1 https://github.com/Acatsama0871/nvim-config.git .
+
+# go to work space
+WORKDIR /workspace
+
+
