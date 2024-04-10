@@ -109,6 +109,30 @@ RUN rm -rf /root/TMP
 WORKDIR /root/.config/nvim
 RUN git clone --depth 1 https://github.com/Acatsama0871/nvim-config.git .
 
+#* aws cli
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && sudo ./aws/install
+
+#* pip
+RUN python3 -m pip install --user pipx \
+    && python3 -m pipx ensurepath
+
+#* poetry
+RUN export PATH="${PATH}:$(python3 -c 'import site; print(site.USER_BASE)')/bin" \
+    && pipx install poetry && poetry config virtualenvs.in-project true
+
+#* github cli
+RUN sudo mkdir -p -m 755 /etc/apt/keyrings && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+    && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && sudo apt update \
+    && sudo apt install gh -y
+
+#* pkl
+WORKDIR /bin
+RUN curl -L -o pkl https://github.com/apple/pkl/releases/download/0.25.2/pkl-linux-amd64 && chmod +x pkl
+
 # go to work space
 WORKDIR /workspace
 
