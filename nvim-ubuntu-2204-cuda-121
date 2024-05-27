@@ -31,7 +31,9 @@ RUN apt-get update \
   cloc \
   cmake \
   libopenmpi-dev \
-  locales
+  locales \
+  software-properties-common \
+  gpg-agent
 
 # install locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
@@ -40,13 +42,17 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en  
 ENV LC_ALL en_US.UTF-8
 
-# python 3.10 install
-RUN sudo apt install software-properties-common -y \
-  && sudo add-apt-repository ppa:deadsnakes/ppa -y \
-  && sudo apt install python3.10 -y \
-  && sudo apt install python-is-python3 -y \
-  && sudo apt install python3-pip -y
-RUN sudo apt install python3.10-venv -y
+# install python 3.12
+RUN apt-get install software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa -y
+RUN apt-get update
+RUN apt-get install -y python3.12
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+
+
+# install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh 
 
 # other tools
 # gdu
@@ -63,9 +69,6 @@ RUN LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygi
 # bottom
 RUN curl -LO https://github.com/ClementTsang/bottom/releases/download/0.9.6/bottom_0.9.6_amd64.deb && \
   dpkg -i bottom_0.9.6_amd64.deb
-
-# install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh 
 
 # install nvim
 # install all needed to run nvim
@@ -113,14 +116,6 @@ RUN git clone --depth 1 https://github.com/Acatsama0871/nvim-config.git .
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
     && sudo ./aws/install
-
-#* pip
-RUN python3 -m pip install --user pipx \
-    && python3 -m pipx ensurepath
-
-#* poetry
-RUN export PATH="${PATH}:$(python3 -c 'import site; print(site.USER_BASE)')/bin" \
-    && pipx install poetry && poetry config virtualenvs.in-project true
 
 #* github cli
 RUN sudo mkdir -p -m 755 /etc/apt/keyrings && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
